@@ -1,0 +1,15 @@
+[Unit]
+Description=Heizungs-Agent (Sunster BLE <-> MQTT)
+After=bluetooth.target network-online.target
+Wants=bluetooth.target network-online.target
+
+[Service]
+Type=simple
+User=heizung
+WorkingDirectory=/opt/heizungssteuerung/agent
+ExecStart=/opt/heizungssteuerung/agent/.venv/bin/heater-agent -c /opt/heizungssteuerung/agent/config.yaml
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

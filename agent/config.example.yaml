@@ -1,0 +1,33 @@
+# Kopieren nach config.yaml und anpassen.
+# Geheimnisse (MQTT-Passwort, PINs) gehören in config.local.yaml (wird nicht eingecheckt)
+# oder in die Umgebungsvariable HEATER_MQTT_PASSWORD.
+
+mqtt:
+  host: 10.8.0.1          # Rootserver im WireGuard-Netz
+  port: 1883
+  username: werkstatt
+  topic_prefix: werkstatt
+
+heaters:
+  - id: "1"
+    name: "Heizung 1"
+    address: "AA:BB:CC:DD:EE:FF"   # aus: python probe/heater_probe.py scan
+    pin: 1234
+  # - id: "2"
+  #   name: "Heizung 2"
+  #   address: "AA:BB:CC:DD:EE:FF"
+  #   pin: 1234
+
+poll_interval_s: 15
+
+# ESPHome-CO-Sensor (später), Wert in ppm als Text
+# co_topic: werkstatt-sensor/sensor/co/state
+
+safety:
+  max_runtime_min: 240        # harte Obergrenze pro Start
+  default_runtime_min: 120    # wenn beim Start nichts angegeben ist / extern gestartet
+  co_off_ppm: 50              # ab hier alle Heizungen AUS
+  co_clear_ppm: 20            # Starts erst wieder unter diesem Wert erlaubt
+  co_sensor_required: false   # auf true setzen, sobald der CO-Sensor verbaut ist!
+  co_sensor_max_age_s: 180
+  vollgas_max_room_temp: 30   # Vollgas AUS, wenn der Raum so warm ist

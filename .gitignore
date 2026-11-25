@@ -13,3 +13,4 @@ logs/
 # Lokale Konfiguration mit PINs/Passwörtern
 config.local.yaml
 .env
+*.egg-info/

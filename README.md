@@ -13,6 +13,7 @@ Fernsteuerung für zwei Sunster-Dieselstandheizungen in einer Motorradwerkstatt.
 | Ordner | Inhalt |
 |---|---|
 | `probe/` | Machbarkeitstest: Heizung per Bluetooth auslesen und schalten |
+| `agent/` | Dienst für den Werkstatt-PC: BLE ↔ MQTT, lokale Sicherheitsregeln |
 
 ## Erkenntnisse zum Protokoll (Sunster V2.1)
 

@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "heater-agent"
+version = "0.1.0"
+description = "Steuert Sunster-Dieselheizungen per BLE und verbindet sie per MQTT mit dem Server"
+requires-python = ">=3.11"
+dependencies = [
+    "bleak>=0.22",
+    "diesel-heater-ble==0.3.14",  # festgenagelt: wir nutzen interne Funktionen
+    "aiomqtt>=2.0",
+    "pyyaml>=6",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23"]
+
+[project.scripts]
+heater-agent = "heater_agent.__main__:main"
+
+[tool.setuptools]
+packages = ["heater_agent"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
