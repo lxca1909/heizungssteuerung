@@ -1,0 +1,20 @@
+# In deinen bestehenden Caddyfile einfügen.
+# Variante A: Caddy läuft direkt auf dem Host
+heizung.example.com {
+	encode gzip
+	reverse_proxy 127.0.0.1:8080 {
+		# Live-Updates (Server-Sent Events) nicht puffern
+		flush_interval -1
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy no-referrer
+	}
+}
+
+# Variante B: Caddy läuft selbst in Docker
+#   -> statt 127.0.0.1:8080 den App-Container über ein gemeinsames Docker-Netz
+#      ansprechen (z. B. reverse_proxy heizung-app-1:8000) oder
+#      host.docker.internal:8080 verwenden.

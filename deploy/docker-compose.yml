@@ -1,0 +1,32 @@
+# Rootserver: MQTT-Broker (nur im WireGuard-Netz) + WebApp (nur localhost, davor dein Caddy)
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    ports:
+      # NUR an die WireGuard-IP des Servers binden – nicht aus dem Internet erreichbar
+      - "${WG_IP:?WG_IP in .env setzen}:1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto/acl:/mosquitto/config/acl:ro
+      - ./mosquitto/passwd:/mosquitto/config/passwd:ro
+      - mosquitto-data:/mosquitto/data
+
+  app:
+    build: ../server
+    restart: unless-stopped
+    depends_on: [mosquitto]
+    env_file: .env
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: "1883"
+      MQTT_USER: webapp
+      DB_PATH: /data/heizung.db
+    ports:
+      - "127.0.0.1:${APP_PORT:-8080}:8000"
+    volumes:
+      - app-data:/data
+
+volumes:
+  mosquitto-data:
+  app-data:

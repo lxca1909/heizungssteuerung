@@ -14,6 +14,8 @@ Fernsteuerung für zwei Sunster-Dieselstandheizungen in einer Motorradwerkstatt.
 |---|---|
 | `probe/` | Machbarkeitstest: Heizung per Bluetooth auslesen und schalten |
 | `agent/` | Dienst für den Werkstatt-PC: BLE ↔ MQTT, lokale Sicherheitsregeln |
+| `server/` | WebApp (FastAPI): Login, Live-Status, Vollgas/Temperatur/Aus, Verlauf, Push |
+| `deploy/` | Docker Compose für den Rootserver (Mosquitto + WebApp), Caddy-Block |
 
 ## Erkenntnisse zum Protokoll (Sunster V2.1)
 

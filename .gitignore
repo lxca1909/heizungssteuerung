@@ -14,3 +14,6 @@ logs/
 config.local.yaml
 .env
 *.egg-info/
+
+# Server-Deployment
+deploy/mosquitto/passwd

@@ -1,0 +1,13 @@
+# Werkstatt-PC (heater-agent)
+user werkstatt
+topic readwrite werkstatt/#
+topic read werkstatt-sensor/#
+
+# WebApp auf dem Server
+user webapp
+topic readwrite werkstatt/#
+topic read werkstatt-sensor/#
+
+# ESP32-Sensorknoten (später)
+user sensor
+topic readwrite werkstatt-sensor/#
