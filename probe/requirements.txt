@@ -1,0 +1,2 @@
+bleak>=0.22
+diesel-heater-ble==0.3.14

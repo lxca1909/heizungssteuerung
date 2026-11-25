@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Laufzeitdaten (enthalten MAC-Adressen und Rohdaten der Heizungen)
+logs/
+*.log
+*.db
+
+# Lokale Konfiguration mit PINs/Passwörtern
+config.local.yaml
+.env
