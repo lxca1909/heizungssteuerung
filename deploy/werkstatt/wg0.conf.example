@@ -1,0 +1,21 @@
+# /etc/wireguard/wg0.conf auf dem Mini-PC (Werkstatt)
+# Schlüssel erzeugen:  wg genkey | tee privatekey | wg pubkey > publickey
+
+[Interface]
+PrivateKey = <privatekey des Mini-PCs>
+Address = 10.8.0.20/32            # freie IP aus deinem WireGuard-Netz
+
+[Peer]
+PublicKey = <publickey des Rootservers>
+Endpoint = <rootserver>:51820
+# Nur das WireGuard-Netz durch den Tunnel – normales Internet geht direkt raus
+AllowedIPs = 10.8.0.1/32
+# Hält den Tunnel hinter dem Werkstatt-Router offen (NAT)
+PersistentKeepalive = 25
+
+
+# ---- Auf dem Rootserver in dessen wg0.conf ergänzen: ----
+# [Peer]
+# # Werkstatt-Mini-PC
+# PublicKey = <publickey des Mini-PCs>
+# AllowedIPs = 10.8.0.20/32

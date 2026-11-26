@@ -17,3 +17,6 @@ config.local.yaml
 
 # Server-Deployment
 deploy/mosquitto/passwd
+
+# Werkstatt-Konfiguration (enthält Adressen/PINs/Passwörter)
+deploy/werkstatt/config.yaml

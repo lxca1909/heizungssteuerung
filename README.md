@@ -16,6 +16,7 @@ Fernsteuerung für zwei Sunster-Dieselstandheizungen in einer Motorradwerkstatt.
 | `agent/` | Dienst für den Werkstatt-PC: BLE ↔ MQTT, lokale Sicherheitsregeln |
 | `server/` | WebApp (FastAPI): Login, Live-Status, Vollgas/Temperatur/Aus, Verlauf, Push |
 | `deploy/` | Docker Compose für den Rootserver (Mosquitto + WebApp), Caddy-Block |
+| `deploy/werkstatt/` | Mini-PC: heater-agent in Docker, WireGuard-Vorlage, Einrichtung |
 
 ## Erkenntnisse zum Protokoll (Sunster V2.1)
 
