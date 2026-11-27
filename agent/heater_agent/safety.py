@@ -5,7 +5,8 @@ Reine Logik ohne BLE/MQTT, damit sie vollständig testbar ist.
 Regeln:
 - Jeder Start hat eine Laufzeitgrenze (max. ``max_runtime_min``). Danach AUS.
   Auch per App/Bedienteil gestartete Heizungen bekommen diese Grenze ab dem
-  Zeitpunkt, an dem der Agent sie laufend sieht.
+  Zeitpunkt, an dem der Agent sie laufend sieht. Die Laufzeit lässt sich ohne
+  Neustart verlängern (Totmannschaltung: ein Mensch bestätigt regelmäßig).
 - CO-Alarm (Sensor oder Heizung meldet >= ``co_off_ppm``): alle Heizungen AUS,
   Starts gesperrt, bis CO wieder unter ``co_clear_ppm`` liegt.
 - Ist ein CO-Sensor Pflicht (``co_sensor_required``), sind Starts gesperrt,
@@ -30,6 +31,7 @@ class SafetyConfig:
     co_sensor_required: bool = False
     co_sensor_max_age_s: float = 180.0
     vollgas_max_room_temp: float | None = 30.0
+    reminder_min: float = 15.0  # so lange vor der Abschaltung eine Erinnerung senden (0 = aus)
 
 
 @dataclass
@@ -92,6 +94,21 @@ class Safety:
         deadline = now + minutes * 60
         self._runs[heater_id] = _Run(deadline)
         return deadline
+
+    def extend(self, heater_id: str, minutes: float, now: float) -> float:
+        """Laufzeit einer laufenden Heizung verlängern (ohne Neustart).
+
+        Die Grenze ``max_runtime_min`` gilt ab jetzt, nicht ab dem Start: Wer
+        regelmäßig bestätigt, kann beliebig lange heizen.
+        """
+        run = self._runs.get(heater_id)
+        if run is None:
+            raise ValueError("Heizung läuft nicht")
+        if minutes <= 0:
+            raise ValueError("Verlängerung muss positiv sein")
+        new = max(run.deadline, now) + minutes * 60
+        run.deadline = min(new, now + self.cfg.max_runtime_min * 60)
+        return run.deadline
 
     def on_stopped(self, heater_id: str) -> None:
         self._runs.pop(heater_id, None)

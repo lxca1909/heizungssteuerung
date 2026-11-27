@@ -31,3 +31,4 @@ safety:
   co_sensor_required: false   # auf true setzen, sobald der CO-Sensor verbaut ist!
   co_sensor_max_age_s: 180
   vollgas_max_room_temp: 30   # Vollgas AUS, wenn der Raum so warm ist
+  reminder_min: 15            # Erinnerung (Push) so viele Minuten vor der Abschaltung

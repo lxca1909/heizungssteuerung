@@ -35,6 +35,6 @@ fi
 echo
 if ! grep -qE '^USERS=.+' .env; then
   echo "Noch zu tun: Login für die WebApp anlegen und die ausgegebene USERS=...-Zeile in .env eintragen:"
-  echo "  docker compose build app && docker compose run --rm --no-deps app python -m app.hashpw luca"
+  echo "  docker compose build app && docker compose run --rm --no-deps app python -m app.hashpw <name>"
 fi
 echo "Dann WG_IP in .env prüfen und starten: docker compose up -d --build"

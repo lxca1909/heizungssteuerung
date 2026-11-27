@@ -24,6 +24,8 @@ class Settings:
     cookie_secure: bool = field(default_factory=lambda: _env("COOKIE_SECURE", "true").lower() == "true")
     ntfy_url: str | None = field(default_factory=lambda: _env("NTFY_URL"))
     ntfy_token: str | None = field(default_factory=lambda: _env("NTFY_TOKEN"))
+    # Adresse der WebApp – Push-Nachrichten öffnen sie beim Antippen
+    public_url: str | None = field(default_factory=lambda: _env("PUBLIC_URL"))
     command_timeout_s: float = field(default_factory=lambda: float(_env("COMMAND_TIMEOUT_S", "30")))
 
     def user_hashes(self) -> dict[str, str]:

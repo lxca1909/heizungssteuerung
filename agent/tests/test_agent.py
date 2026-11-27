@@ -100,3 +100,44 @@ async def test_temperature_start(setup):
     await agent.handle_command("1", json.dumps({"action": "start", "mode": "temperatur", "temp": 22}))
     assert acks(published)[-1]["ok"]
     assert sim.mode == 2 and sim.value == 22
+
+
+async def test_extend_and_reminder(setup):
+    sim, clock, published, worker, agent = setup
+    await worker.poll_once()
+    await agent.handle_command("1", json.dumps({"action": "start", "mode": "vollgas", "minutes": 60}))
+    start = clock.t
+
+    clock.t = start + 40 * 60                      # 20 min Rest: noch keine Erinnerung
+    await worker.poll_once()
+    assert not [p for t, p, _ in published if t == "alarm" and p["level"] == "reminder"]
+
+    clock.t = start + 46 * 60                      # 14 min Rest: Erinnerung
+    await worker.poll_once()
+    await worker.poll_once()                       # nur einmal
+    reminders = [p for t, p, _ in published if t == "alarm" and p["level"] == "reminder"]
+    assert len(reminders) == 1 and "verlängern" in reminders[0]["message"]
+
+    await agent.handle_command("1", json.dumps({"action": "extend", "minutes": 60}))
+    assert acks(published)[-1]["ok"], acks(published)[-1]
+    assert worker.state()["remaining_min"] == 74.0
+
+    clock.t = start + 61 * 60                      # alte Abschaltzeit vorbei: läuft weiter
+    await worker.poll_once()
+    assert sim.run_state == 2
+
+    clock.t = start + 106 * 60                     # neue Erinnerung für die neue Abschaltzeit
+    await worker.poll_once()
+    reminders = [p for t, p, _ in published if t == "alarm" and p["level"] == "reminder"]
+    assert len(reminders) == 2
+
+    clock.t = start + 120 * 60
+    await worker.poll_once()
+    assert sim.run_state == 3                      # jetzt aus
+
+
+async def test_extend_when_off(setup):
+    sim, clock, published, worker, agent = setup
+    await worker.poll_once()
+    await agent.handle_command("1", json.dumps({"action": "extend", "minutes": 60}))
+    assert not acks(published)[-1]["ok"]

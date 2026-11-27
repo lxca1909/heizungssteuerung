@@ -96,3 +96,16 @@ def test_vollgas_room_temp_limit():
     # im Temperaturmodus regelt die Heizung selbst
     temp_mode = replace(RUNNING, mode="temperatur", raw_mode=2, room_temp=31.0)
     assert s.check_running("1", temp_mode, 3) is None
+
+
+def test_extend_without_restart():
+    s = make(max_runtime_min=240)
+    s.on_started("1", 60, now=0)
+    assert s.extend("1", 60, now=1800) == 2 * 3600          # alte Abschaltzeit + 1 h
+    # Grenze gilt ab jetzt: nach 3 h laufen darf man wieder bis zu 4 h ab jetzt verlängern
+    assert s.extend("1", 999, now=3 * 3600) == 3 * 3600 + 240 * 60
+    # Abgelaufene Abschaltzeit: Verlängerung zählt ab jetzt
+    s.on_started("2", 10, now=0)
+    assert s.extend("2", 30, now=1000) == 1000 + 1800
+    with pytest.raises(ValueError):
+        s.extend("3", 30, now=0)

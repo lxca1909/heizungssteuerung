@@ -19,9 +19,9 @@ cd heizungssteuerung/deploy
 
 ```bash
 docker compose build app
-docker compose run --rm --no-deps app python -m app.hashpw luca
+docker compose run --rm --no-deps app python -m app.hashpw <name>
 ```
-Die ausgegebene Zeile `USERS=luca:scrypt.…` in `.env` eintragen. Für mehrere Benutzer die Einträge mit Komma trennen.
+Die ausgegebene Zeile `USERS=<name>:scrypt.…` in `.env` eintragen. Für mehrere Benutzer die Einträge mit Komma trennen.
 
 ## 3. `.env` prüfen
 

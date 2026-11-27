@@ -51,6 +51,7 @@ class HeaterWorker:
         self.last_seen: float | None = None
         self._wake = asyncio.Event()
         self._backoff = 5.0
+        self._reminded_for: float | None = None  # Abschaltzeit, für die schon erinnert wurde
 
     # ---------------------------------------------------------- Zustand
     def state(self) -> dict[str, Any]:
@@ -104,7 +105,24 @@ class HeaterWorker:
         reason = self.safety.check_running(self.id, status, self.clock())
         if reason:
             await self.force_off(reason)
+        else:
+            await self._maybe_remind()
         await self.publish_state()
+
+    async def _maybe_remind(self) -> None:
+        """Einmal pro Abschaltzeit kurz vorher erinnern (Push: „verlängern?“)."""
+        deadline = self.safety.deadline(self.id)
+        window = self.safety.cfg.reminder_min * 60
+        if deadline is None or window <= 0 or self._reminded_for == deadline:
+            return
+        left = deadline - self.clock()
+        if 0 < left <= window:
+            self._reminded_for = deadline
+            off = time.strftime("%H:%M", time.localtime(deadline))
+            await self._publish("alarm", {
+                "level": "reminder", "heater": self.id, "name": self.name, "ts": self.clock(), "off_at": deadline,
+                "message": f"Geht um {off} automatisch aus (in {left / 60:.0f} min) – in der WebApp verlängern?",
+            }, False)
 
     async def _apply_status(self, status: HeaterStatus) -> None:
         prev = self.status
@@ -126,6 +144,7 @@ class HeaterWorker:
     async def handle(self, cmd: dict[str, Any]) -> tuple[bool, str]:
         """Befehle:
         {"action": "start", "mode": "vollgas"|"temperatur", "temp": 22, "minutes": 120}
+        {"action": "extend", "minutes": 60}
         {"action": "stop"}
         {"action": "refresh"}
         """
@@ -148,6 +167,15 @@ class HeaterWorker:
             self.safety.on_stopped(self.id)
             await self.publish_state()
             return True, "Ausgeschaltet" if not status.on else "Ausschaltbefehl gesendet"
+
+        if action == "extend":
+            if not (self.status and self.status.on):
+                return False, "Heizung läuft nicht"
+            if self.safety.co_alarm:
+                return False, "CO-Alarm aktiv"
+            deadline = self.safety.extend(self.id, float(cmd.get("minutes", 60)), now)
+            await self.publish_state()
+            return True, f"Verlängert – läuft bis {time.strftime('%H:%M', time.localtime(deadline))}"
 
         if action == "start":
             status = await self.heater.status()

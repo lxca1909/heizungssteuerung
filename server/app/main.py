@@ -36,12 +36,16 @@ class StartRequest(BaseModel):
     minutes: int = Field(default=120, ge=5, le=240)
 
 
+class ExtendRequest(BaseModel):
+    minutes: int = Field(default=60, ge=15, le=240)
+
+
 def create_app(settings: Settings | None = None, hub: Hub | None = None, start_mqtt: bool = True) -> FastAPI:
     settings = settings or Settings()
     settings.validate()
     users = settings.user_hashes()
     db = hub.db if hub else Database(settings.db_path)
-    hub = hub or Hub(db, Notifier(settings.ntfy_url, settings.ntfy_token), settings.topic_prefix,
+    hub = hub or Hub(db, Notifier(settings.ntfy_url, settings.ntfy_token, settings.public_url), settings.topic_prefix,
                      settings.command_timeout_s)
     limiter = LoginLimiter()
 
@@ -167,6 +171,10 @@ def create_app(settings: Settings | None = None, hub: Hub | None = None, start_m
                 raise HTTPException(422, "Temperatur fehlt")
             cmd["temp"] = body.temp
         return await run_command(name, heater_id, cmd)
+
+    @app.post("/api/heater/{heater_id}/extend")
+    async def extend(heater_id: str, body: ExtendRequest, name: str = Depends(user)) -> dict[str, Any]:
+        return await run_command(name, heater_id, {"action": "extend", "minutes": body.minutes})
 
     @app.post("/api/heater/{heater_id}/stop")
     async def stop(heater_id: str, name: str = Depends(user)) -> dict[str, Any]:

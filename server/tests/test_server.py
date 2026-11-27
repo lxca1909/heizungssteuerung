@@ -197,3 +197,42 @@ def test_rejected_command_passed_through(env):
     hub._client = FakeMqtt(hub, reply_ok=False)
     r = client.post("/api/heater/1/start", json={})
     assert r.status_code == 200 and r.json() == {"ok": False, "message": "kühlt ab"}
+
+
+def test_extend_command(env):
+    client, hub, _ = env
+    login(client)
+    feed(client, hub, "werkstatt/agent/status", "online")
+    feed(client, hub, "werkstatt/heater/1/state", STATE)
+    hub._client = FakeMqtt(hub)
+    r = client.post("/api/heater/1/extend", json={"minutes": 120})
+    assert r.status_code == 200
+    assert hub._client.published[-1][1]["action"] == "extend"
+    assert hub._client.published[-1][1]["minutes"] == 120
+    assert client.post("/api/heater/1/extend", json={"minutes": 5}).status_code == 422
+    assert client.post("/api/heater/1/extend", json={"minutes": 999}).status_code == 422
+
+
+def test_reminder_push_links_to_webapp(env):
+    client, hub, notifier = env
+    feed(client, hub, "werkstatt/alarm",
+         {"level": "reminder", "heater": "1", "name": "Vorne", "message": "Geht um 14:30 aus", "ts": 1})
+    assert notifier.sent[-1] == ("Vorne", "Geht um 14:30 aus", "reminder")
+
+
+async def test_ntfy_headers(monkeypatch):
+    import httpx
+    from app.notify import Notifier
+    captured = {}
+
+    async def fake_post(self, url, content, headers):
+        captured.update(url=url, body=content.decode(), headers=headers)
+        return httpx.Response(200, request=httpx.Request("POST", url))
+
+    monkeypatch.setattr(httpx.AsyncClient, "post", fake_post)
+    await Notifier("https://ntfy.example/topic", public_url="https://heizung.example").send(
+        "Heizung 1", "Geht um 14:30 aus – verlängern?", "reminder")
+    h = captured["headers"]
+    assert captured["body"] == "Geht um 14:30 aus – verlängern?"
+    assert h["Priority"] == "high" and h["Click"] == "https://heizung.example"
+    assert h["Actions"].startswith("view, Verl") and h["Actions"].endswith("https://heizung.example")

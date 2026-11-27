@@ -38,6 +38,7 @@ Befehle:
 ```json
 {"id": "abc", "action": "start", "mode": "vollgas", "minutes": 120, "ts": 1764090000}
 {"id": "abc", "action": "start", "mode": "temperatur", "temp": 22, "minutes": 120}
+{"id": "abc", "action": "extend", "minutes": 60}
 {"id": "abc", "action": "stop"}
 {"action": "refresh"}
 ```
@@ -46,6 +47,7 @@ Ist `ts` gesetzt und der Befehl älter als 60 s, wird er ignoriert.
 ## Sicherheitsregeln (`heater_agent/safety.py`)
 
 - Jeder Start hat eine Laufzeitgrenze (Standard 120 min, maximal 240 min). Das gilt auch für Starts per App.
+  15 min vorher kommt eine Erinnerung (`alarm` mit `level: reminder`). Mit `extend` lässt sich ohne Neustart verlängern; die 240 min gelten ab dem Zeitpunkt der Verlängerung.
 - CO ab 50 ppm schaltet alle Heizungen AUS. Starts sind gesperrt, bis der Wert unter 20 ppm fällt.
 - Optional: kein Start ohne frische Werte vom CO-Sensor (`co_sensor_required`).
 - Kein Start bei Fehlercode oder während der Abkühlphase.

@@ -142,6 +142,9 @@ function card(id) {
     if (!(temp >= 8 && temp <= 36)) return toast("Temperatur zwischen 8 und 36 °C", true);
     command(id, "start", { mode: "temperatur", temp, minutes: minutes() }, el);
   };
+  el.querySelectorAll(".h-extend").forEach((b) => {
+    b.onclick = () => command(id, "extend", { minutes: Number(b.dataset.min) }, el);
+  });
   $(".h-stop", el).onclick = () => {
     if (confirm("Heizung ausschalten?")) command(id, "stop", null, el);
   };
@@ -185,7 +188,10 @@ function renderHeater(h) {
   const canStart = h.connected && !!s && state.agentOnline !== false && !s.cooling_down;
   $(".h-vollgas", el).disabled = !canStart || el.dataset.busy === "1";
   $(".h-tempstart", el).disabled = !canStart || el.dataset.busy === "1";
-  $(".h-stop", el).disabled = !(h.connected && s && s.on) || el.dataset.busy === "1";
+  const running = !!(h.connected && s && s.on);
+  $(".h-stop", el).disabled = !running || el.dataset.busy === "1";
+  $(".extend-row", el).hidden = !running;
+  el.querySelectorAll(".h-extend").forEach((b) => (b.disabled = el.dataset.busy === "1" || state.agentOnline === false));
 }
 
 function fmtMinutes(m) {
@@ -196,7 +202,7 @@ function fmtMinutes(m) {
 async function command(id, action, body, el) {
   el.dataset.busy = "1";
   el.querySelectorAll("button").forEach((b) => (b.disabled = true));
-  toast(action === "stop" ? "Schalte aus …" : "Starte …");
+  toast({ stop: "Schalte aus …", extend: "Verlängere …" }[action] || "Starte …");
   try {
     const r = await api(`/api/heater/${encodeURIComponent(id)}/${action}`, { method: "POST", body: body || undefined });
     toast(r.message || (r.ok ? "OK" : "Fehlgeschlagen"), !r.ok);

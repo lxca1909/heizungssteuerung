@@ -78,6 +78,10 @@ h2 { font-size: 1.05rem; margin: 0; }
 .temp-row { display: flex; align-items: center; gap: 8px; }
 .temp-row input { width: 5.5em; }
 .temp-row .btn { flex: 1; }
+.extend-row { display: flex; align-items: center; gap: 8px; }
+.extend-row span { flex: 1; }
+.extend-row .btn { flex: 1; color: var(--primary); border-color: var(--primary); background: transparent; }
+.events .reminder { color: var(--primary); }
 
 input, select {
   font: inherit; color: var(--text); background: var(--bg);
