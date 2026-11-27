@@ -20,3 +20,5 @@ deploy/mosquitto/passwd
 
 # Werkstatt-Konfiguration (enthält Adressen/PINs/Passwörter)
 deploy/werkstatt/config.yaml
+config.yaml
+!agent/config.example.yaml

@@ -13,11 +13,15 @@ Die Sicherheitsregeln greifen auch, wenn der Server nicht erreichbar ist.
 cd agent
 python3 -m venv .venv
 .venv/bin/pip install -e .
-cp config.example.yaml config.yaml      # anpassen
-.venv/bin/heater-agent -c config.yaml -v
+cp ../deploy/werkstatt/.env.example .env    # ausfüllen
+set -a; . ./.env; set +a                    # Variablen laden
+.venv/bin/heater-agent -v
 ```
 
-Als Dienst: `heater-agent.service` nach `/etc/systemd/system/` kopieren und die Pfade/den Benutzer anpassen.
+Konfiguration über Umgebungsvariablen (siehe `deploy/werkstatt/.env.example`).
+Alternativ geht `-c config.yaml` (Vorlage `config.example.yaml`). Umgebungsvariablen haben Vorrang.
+
+In Docker: siehe `deploy/werkstatt/`. Ohne Docker als Dienst: `heater-agent.service` nach `/etc/systemd/system/` kopieren und die Pfade/den Benutzer anpassen.
 Dann `systemctl enable --now heater-agent` ausführen. Der Benutzer braucht Zugriff auf Bluetooth (Gruppe `bluetooth`).
 
 **Hinweis:** Solange der Agent verbunden ist, kann sich die Sunster-App nicht verbinden. Die Heizung akzeptiert nur eine Verbindung.

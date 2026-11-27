@@ -7,7 +7,8 @@ Wants=bluetooth.target network-online.target
 Type=simple
 User=heizung
 WorkingDirectory=/opt/heizungssteuerung/agent
-ExecStart=/opt/heizungssteuerung/agent/.venv/bin/heater-agent -c /opt/heizungssteuerung/agent/config.yaml
+EnvironmentFile=/opt/heizungssteuerung/agent/.env
+ExecStart=/opt/heizungssteuerung/agent/.venv/bin/heater-agent
 Restart=always
 RestartSec=10
 

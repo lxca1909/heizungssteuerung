@@ -41,18 +41,14 @@ Den Public Key des Mini-PCs auf dem Rootserver als Peer eintragen (siehe Ende vo
 ```bash
 git clone https://github.com/lxca1909/heizungssteuerung.git /opt/heizungssteuerung
 cd /opt/heizungssteuerung/deploy/werkstatt
-cp ../../agent/config.example.yaml config.yaml        # Heizungen, MQTT-Host = WireGuard-IP des Servers
-cat > config.local.yaml <<'EOF'
-mqtt:
-  username: werkstatt
-  password: "<Passwort aus setup.sh auf dem Server>"
-EOF
-chmod 600 config.local.yaml
+cp .env.example .env && chmod 600 .env
+nano .env        # MQTT-Passwort, Heizungsadressen und PINs eintragen
 docker compose up -d --build
 docker compose logs -f
 ```
 
 Im Log sollten `MQTT verbunden` und `… verbunden` für jede Heizung erscheinen.
+Alle Einstellungen, auch die Sicherheitsregeln, stehen in `.env`. Die Datei gelangt nie ins Repo.
 
 ## Hinweise
 

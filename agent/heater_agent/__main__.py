@@ -1,4 +1,4 @@
-"""Start: python -m heater_agent -c config.yaml"""
+"""Start: heater-agent (liest .env-Variablen aus der Umgebung, optional -c config.yaml)"""
 from __future__ import annotations
 
 import argparse
@@ -15,7 +15,7 @@ from .sunster import SunsterHeater
 async def amain(config_path: str) -> None:
     cfg = load_config(config_path)
     if not cfg.heaters:
-        raise SystemExit("Keine Heizungen in der Konfiguration")
+        raise SystemExit("Keine Heizungen konfiguriert – HEATER_1_ADDRESS in .env setzen (oder heaters: in config.yaml)")
     bridge = MqttBridge(cfg.mqtt, cfg.co_topic)
     safety = Safety(cfg.safety)
     workers = [

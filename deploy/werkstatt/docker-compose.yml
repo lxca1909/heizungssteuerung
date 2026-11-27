@@ -1,15 +1,15 @@
 # Mini-PC in der Werkstatt: heater-agent (Bluetooth <-> MQTT über WireGuard)
+# Konfiguration komplett über .env (cp .env.example .env) – wird nie eingecheckt.
 services:
   heater-agent:
     build: ../../agent
     restart: unless-stopped
+    env_file: .env
     # Host-Netz: erreicht den Server direkt über den WireGuard-Tunnel des Hosts
     network_mode: host
     volumes:
       # Bluetooth läuft über BlueZ auf dem Host, angesprochen per System-D-Bus
       - /run/dbus:/run/dbus
-      - ./config.yaml:/config/config.yaml:ro
-      - ./config.local.yaml:/config/config.local.yaml:ro
     logging:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }

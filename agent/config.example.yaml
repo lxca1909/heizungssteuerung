@@ -1,3 +1,4 @@
+# Alternative zur .env (siehe deploy/werkstatt/.env.example) – Umgebungsvariablen haben Vorrang.
 # Kopieren nach config.yaml und anpassen.
 # Geheimnisse (MQTT-Passwort, PINs) gehören in config.local.yaml (wird nicht eingecheckt)
 # oder in die Umgebungsvariable HEATER_MQTT_PASSWORD.

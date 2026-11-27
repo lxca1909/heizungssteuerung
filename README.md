@@ -48,7 +48,7 @@ Gebaut für eine Motorradwerkstatt mit zwei Heizungen. Ein Mini-PC in der Werkst
    python heater_probe.py status AA:BB:CC:DD:EE:FF
    ```
 2. **Server einrichten:** siehe [`deploy/README.md`](deploy/README.md). Dort kommen `./setup.sh`, der Login, `docker compose up -d` und der Caddy-Block.
-3. **Mini-PC einrichten:** siehe [`deploy/werkstatt/README.md`](deploy/werkstatt/README.md). Dort kommen WireGuard, `config.yaml` und `docker compose up -d`.
+3. **Mini-PC einrichten:** siehe [`deploy/werkstatt/README.md`](deploy/werkstatt/README.md). Dort kommen WireGuard, `.env` und `docker compose up -d`.
 
 ## Sicherheit
 
