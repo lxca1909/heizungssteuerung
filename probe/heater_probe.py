@@ -202,6 +202,9 @@ class Heater:
             if self.cbff.is_control_ack_only(data):
                 self.log("INFO", "Befehl bestätigt (ACK)")
                 return
+            if self.cbff.parse_settings_response(data) is not None:
+                self.log("INFO", "Einstellungen empfangen (83/00)")
+                return
             parsed = self.cbff.parse(data)
             if parsed is not None:
                 self.protocol = self.cbff
