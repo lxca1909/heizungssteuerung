@@ -37,6 +37,12 @@ python heater_probe.py --pin 1234 status AA:BB:CC:DD:EE:FF --watch   # fortlaufe
 Die PIN ist die gleiche wie in der Sunster-App (ab Werk meist `1234`).
 Vergleiche Raumtemperatur und Spannung mit dem Display bzw. der App.
 
+**Einstellungen erforschen:** `--watch` laufen lassen und am Bedienteil der Heizung eine Einstellung nach der anderen ändern.
+Nach jeder Änderung eintippen, was du geändert hast, und Enter drücken, zum Beispiel `Höhe auf 1500 m`. Die Notiz landet mit Zeitstempel im Log.
+So lässt sich später zuordnen, welches Byte zu welcher Einstellung gehört.
+Das Skript liest bei jeder Runde zusätzlich die Einstellungen der Heizung aus. Das ist eine reine Leseabfrage.
+Die Sunster-App kann sich währenddessen nicht verbinden, deshalb das Bedienteil benutzen.
+
 **3. Einschalten testen** (nur wenn du vor Ort bist)
 ```bash
 python heater_probe.py --pin 1234 on AA:BB:CC:DD:EE:FF --minutes 10

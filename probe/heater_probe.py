@@ -294,19 +294,39 @@ async def cmd_scan(args: argparse.Namespace) -> int:
 
 async def cmd_status(args: argparse.Namespace) -> int:
     h = Heater(args.address, args.pin, args.log_dir)
+    loop = asyncio.get_running_loop()
+    reading_notes = False
     try:
         await h.connect()
         print(h.summary())
+        if args.watch and sys.stdin.isatty():
+            print("Notiz ins Log: Text eintippen + Enter (z. B. 'Höhe auf 1500 m'). Beenden mit Strg+C.")
+            loop.add_reader(sys.stdin.fileno(), _read_note, h)
+            reading_notes = True
         while args.watch:
             await asyncio.sleep(args.interval)
             if await h.request_status():
                 print(f"{datetime.now():%H:%M:%S}  {h.summary()}")
             else:
                 print(f"{datetime.now():%H:%M:%S}  (keine Antwort)")
+            if h.protocol is h.cbff:
+                # Einstellungen mitlesen (reine Leseabfrage wie in der App), Antwort landet roh im Log
+                await h._write(h.cbff.build_settings_query(), "Einstellungen lesen (03/00)")
+                await asyncio.sleep(0.5)
         return 0
     finally:
+        if reading_notes:
+            loop.remove_reader(sys.stdin.fileno())
         await h.disconnect()
         print(f"Log: {h.log_path}")
+
+
+def _read_note(h: Heater) -> None:
+    """Eine eingetippte Zeile als NOTE ins Log schreiben (wird aufgerufen, wenn Enter gedrückt wurde)."""
+    text = sys.stdin.readline().strip()
+    if text:
+        h.log("NOTE", text)
+        print(f"{datetime.now():%H:%M:%S}  Notiz gespeichert: {text}")
 
 
 def check_setting(h: Heater, args: argparse.Namespace) -> None:
