@@ -236,3 +236,16 @@ async def test_ntfy_headers(monkeypatch):
     assert captured["body"] == "Geht um 14:30 aus – verlängern?"
     assert h["Priority"] == "high" and h["Click"] == "https://heizung.example"
     assert h["Actions"].startswith("view, Verl") and h["Actions"].endswith("https://heizung.example")
+
+
+def test_ventilation_validation(env):
+    client, hub, _ = env
+    login(client)
+    feed(client, hub, "werkstatt/agent/status", "online")
+    feed(client, hub, "werkstatt/heater/1/state", STATE)
+    hub._client = FakeMqtt(hub)
+    assert client.post("/api/heater/1/start", json={"mode": "lueften"}).status_code == 422
+    assert client.post("/api/heater/1/start", json={"mode": "lueften", "level": 11}).status_code == 422
+    r = client.post("/api/heater/1/start", json={"mode": "lueften", "level": 3, "minutes": 30})
+    assert r.status_code == 200
+    assert hub._client.published[-1][1] == {**hub._client.published[-1][1], "mode": "lueften", "level": 3}

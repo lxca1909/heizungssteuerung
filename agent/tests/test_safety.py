@@ -7,7 +7,7 @@ from heater_agent.sunster import HeaterStatus
 
 BASE = HeaterStatus(
     on=False, run_state=1, phase="standby", mode="temperatur", raw_mode=2, raw_value=20,
-    set_temp=20, gear=1, room_temp=10.0, case_temp=20.0, voltage=12.8, co_ppm=0.0, error_code=0,
+    set_temp=20, fan_level=None, gear=1, room_temp=10.0, case_temp=20.0, voltage=12.8, co_ppm=0.0, error_code=0,
 )
 RUNNING = replace(BASE, on=True, run_state=2, phase="heizen", mode="vollgas", raw_mode=4, raw_value=10,
                   set_temp=None, gear=10)

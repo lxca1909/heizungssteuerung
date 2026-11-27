@@ -31,8 +31,9 @@ class LoginRequest(BaseModel):
 
 
 class StartRequest(BaseModel):
-    mode: Literal["vollgas", "temperatur"] = "vollgas"
+    mode: Literal["vollgas", "temperatur", "lueften"] = "vollgas"
     temp: int | None = Field(default=None, ge=8, le=36)
+    level: int | None = Field(default=None, ge=1, le=10)
     minutes: int = Field(default=120, ge=5, le=240)
 
 
@@ -170,6 +171,10 @@ def create_app(settings: Settings | None = None, hub: Hub | None = None, start_m
             if body.temp is None:
                 raise HTTPException(422, "Temperatur fehlt")
             cmd["temp"] = body.temp
+        if body.mode == "lueften":
+            if body.level is None:
+                raise HTTPException(422, "Lüfterstufe fehlt")
+            cmd["level"] = body.level
         return await run_command(name, heater_id, cmd)
 
     @app.post("/api/heater/{heater_id}/extend")

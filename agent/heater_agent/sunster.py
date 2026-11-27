@@ -3,12 +3,16 @@
 Real getestet am 2026-11-25 (Mainboard-Typ 1):
 - Service FFE0 / Characteristic FFE1 (write + notify)
 - Klartext-Ping -> Heizung antwortet AA77 (gesperrt) -> verschlüsselter PIN-Handshake
-- Status: FEAA 80/00, 47 Byte. Byte 10 = Laufzustand, 11 = Modus, 12 = Wert,
-  13 = aktuelle Stufe, 14 = Phase
+- Status: FEAA 80/00, 47 Byte. Byte 8 = Mainboard-Typ (0 = Heizung schläft, Werte
+  ungültig), 10 = Laufzustand (0 ganz aus, 1 Standby, 2 an, 3 Abkühlen), 11 = Modus,
+  12 = Wert, 13 = aktuelle Stufe 1–10, 14 = Phase, 18/19 = Raum °C, 23/24 = Spannung x10,
+  25/26 = Gehäuse °C x10 (jeweils little-endian), 27/28 = CO (FFFF = kein Sensor)
 - Run-Befehl FEAA 01/xx mit Payload [Modus, Wert, FF, FF]; xx = 1 an, 0 aus
-- Modus 2 = Temperatur (Wert = Soll °C), Modus 4 = Vollgas (Wert 10)
-- Modus 1 (Stufe) wird von dieser Heizung NICHT übernommen
-- Laufzustand 3 = Abkühlphase: Startbefehle werden ignoriert
+- Modus 2 = Temperatur (Wert = Soll 8–36 °C), 3 = Lüften (Wert = Lüfterstufe 1–10),
+  4 = Vollgas (Wert 10). Am Bedienteil: Temperatur -> Lüften -> Vollgas
+- Modus 1 (Stufe) gibt es bei dieser Heizung nicht
+- Laufzustand 3 = Abkühlphase (~4:20 min): Startbefehle werden ignoriert
+- Kein CO-Sensor (co_ppm immer None)
 """
 from __future__ import annotations
 
@@ -26,9 +30,11 @@ SERVICE_UUID = "0000ffe0-0000-1000-8000-00805f9b34fb"
 CHAR_UUID = "0000ffe1-0000-1000-8000-00805f9b34fb"
 
 MODE_TEMPERATURE = 2
+MODE_VENTILATION = 3
 MODE_VOLLGAS = 4
 VOLLGAS_VALUE = 10
 MIN_TEMP, MAX_TEMP = 8, 36
+MIN_FAN, MAX_FAN = 1, 10
 
 RUN_STATE_COOLDOWN = 3
 
@@ -51,7 +57,8 @@ class HeaterStatus:
     raw_mode: int
     raw_value: int
     set_temp: int | None
-    gear: int | None
+    fan_level: int | None       # nur im Lüftmodus
+    gear: int | None            # aktuelle Stufe 1–10 (Byte 13)
     room_temp: float | None
     case_temp: float | None
     voltage: float | None
@@ -67,6 +74,11 @@ class HeaterStatus:
         d["cooling_down"] = self.cooling_down
         return d
 
+    @property
+    def asleep(self) -> bool:
+        """Heizung ganz aus: Messwerte sind dann ungültig."""
+        return self.room_temp is None and self.voltage is None
+
 
 def status_from_packet(cbff: ProtocolCBFF, data: bytes | bytearray) -> HeaterStatus | None:
     """Ein (verschlüsseltes) Statuspaket in HeaterStatus übersetzen, sonst None."""
@@ -79,6 +91,10 @@ def status_from_packet(cbff: ProtocolCBFF, data: bytes | bytearray) -> HeaterSta
     if parsed is None or parsed.get("_cbff_data_suspect"):
         return None
     raw_mode, raw_value, gear, step = pkt[11], pkt[12], pkt[13], pkt[14]
+    # Schläft die Steuerung (Byte 8 = 0), sind die Messwerte Müll (z. B. 0,0 V).
+    asleep = pkt[8] == 0 or not parsed.get("supply_voltage")
+    def measured(key: str) -> float | None:
+        return None if asleep else parsed.get(key)
     return HeaterStatus(
         on=bool(parsed.get("running_state")),
         run_state=pkt[10],
@@ -87,10 +103,11 @@ def status_from_packet(cbff: ProtocolCBFF, data: bytes | bytearray) -> HeaterSta
         raw_mode=raw_mode,
         raw_value=raw_value,
         set_temp=raw_value if raw_mode == MODE_TEMPERATURE else None,
-        gear=gear,
-        room_temp=parsed.get("cab_temperature"),
-        case_temp=parsed.get("case_temperature"),
-        voltage=parsed.get("supply_voltage"),
+        fan_level=raw_value if raw_mode == MODE_VENTILATION else None,
+        gear=None if asleep else gear,
+        room_temp=measured("cab_temperature"),
+        case_temp=measured("case_temperature"),
+        voltage=measured("supply_voltage"),
         co_ppm=parsed.get("co_ppm"),
         error_code=int(parsed.get("error_code") or 0),
     )
@@ -187,9 +204,18 @@ class SunsterHeater:
             raise ValueError(f"Temperatur muss zwischen {MIN_TEMP} und {MAX_TEMP} °C liegen")
         return await self._run(MODE_TEMPERATURE, temp, power=True)
 
+    async def set_ventilation(self, level: int) -> HeaterStatus:
+        """Lüften (nur Gebläse) mit Stufe 1–10. Wie in der Sunster-App nur bei laufender Heizung."""
+        if not MIN_FAN <= level <= MAX_FAN:
+            raise ValueError(f"Lüfterstufe muss zwischen {MIN_FAN} und {MAX_FAN} liegen")
+        if not (self.last_status and self.last_status.on):
+            raise HeaterError("Lüften geht nur, wenn die Heizung läuft")
+        return await self._run(MODE_VENTILATION, level, power=True)
+
     async def stop(self) -> HeaterStatus:
         last = self.last_status
-        mode = last.raw_mode if last and last.raw_mode in (MODE_TEMPERATURE, MODE_VOLLGAS) else MODE_TEMPERATURE
+        known = (MODE_TEMPERATURE, MODE_VENTILATION, MODE_VOLLGAS)
+        mode = last.raw_mode if last and last.raw_mode in known else MODE_TEMPERATURE
         value = last.raw_value if last and mode == last.raw_mode else 20
         return await self._run(mode, value, power=False)
 

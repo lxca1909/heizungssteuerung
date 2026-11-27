@@ -8,8 +8,8 @@ Gebaut für eine Motorradwerkstatt mit zwei Heizungen. Ein Mini-PC in der Werkst
 
 ## Funktionen
 
-- **Steuern von überall:** Vollgas, Temperaturbetrieb (8–36 °C) und Aus.
-- **Live-Status:** an/aus, Phase (Zündung, Heizen, Abkühlen), Raum- und Gehäusetemperatur, Spannung, Fehlercodes.
+- **Steuern von überall:** Vollgas, Temperaturbetrieb (8–36 °C), Lüften (Stufe 1–10) und Aus.
+- **Live-Status:** an/aus, Phase (Zündung, Heizen, Abkühlen), aktuelle Stufe, Raum- und Gehäusetemperatur, Spannung, Fehlercodes.
 - **Laufzeitgrenze mit Verlängern:** Jeder Start läuft höchstens bis zur gewählten Laufzeit. 15 Minuten vorher kommt eine Push-Nachricht. Ein Tipp auf „+1 h“ oder „+2 h“ verlängert ohne Neustart.
 - **Lokale Sicherheitsregeln:** Sie laufen auf dem Werkstatt-PC weiter, auch wenn Server oder Internet ausfallen (siehe [Sicherheit](#sicherheit)).
 - **Verlauf und Protokoll:** Temperaturkurve, Ereignisse, wer wann geschaltet hat.
@@ -73,9 +73,23 @@ Die Bluetooth-Kommunikation baut auf der Bibliothek [`diesel-heater-ble`](https:
 
 - Service `FFE0`, Characteristic `FFE1` (write + notify).
 - Ein Klartext-Ping wird mit `AA77` beantwortet („gesperrt“). Danach folgen ein verschlüsselter PIN-Handshake und verschlüsselte `FEAA`-Befehle.
-- Status-Byte 11 ist der Modus: `02` = Temperatur, **`04` = Vollgas** (nicht in der Bibliothek). Byte 12 ist der Wert, Byte 13 die aktuelle Stufe, Byte 10 der Laufzustand (`03` = Abkühlphase).
-- **Vollgas setzen:** Run-Befehl `01/01` mit Payload `[04, 0A, FF, FF]`.
-- Den Stufenmodus (`01`) übernimmt diese Heizung nicht. Sie setzt die Stufe stattdessen als Solltemperatur.
+- Status (FEAA `80/00`, 47 Byte, alle Mehrbyte-Werte little-endian):
+
+  | Byte | Bedeutung |
+  |---|---|
+  | 8 | Mainboard-Typ, `0` = Steuerung schläft (Messwerte ungültig) |
+  | 10 | Laufzustand: `0` ganz aus, `1` Standby, `2` an, `3` Abkühlphase (~4:20 min) |
+  | 11 | Modus: `2` Temperatur, `3` Lüften, **`4` Vollgas** (nicht in der Bibliothek) |
+  | 12 | Wert: Solltemperatur 8–36 °C bzw. Lüfterstufe 1–10 bzw. 10 |
+  | 13 | aktuelle Stufe 1–10 |
+  | 14 | Phase: `0` Standby, `1` Selbsttest, `2` Zündung (~2,5 min), `3` Heizen, `4` Abkühlen |
+  | 18/19 | Raumtemperatur °C |
+  | 23/24 | Spannung × 10 |
+  | 25/26 | Gehäusetemperatur × 10 |
+  | 27/28 | CO, `FFFF` = kein Sensor |
+
+- **Modus setzen:** Run-Befehl `01/01` mit Payload `[Modus, Wert, FF, FF]`, z. B. Vollgas `[04, 0A, FF, FF]`. Mit `01/00` und dem aktuellen Modus wird ausgeschaltet.
+- Am Bedienteil wechseln die Modi der Reihe nach: Temperatur → Lüften → Vollgas. Den Stufenmodus (`01`) gibt es bei dieser Heizung nicht. Sie übernimmt die Stufe stattdessen als Solltemperatur.
 - Während der Abkühlphase werden Startbefehle ignoriert.
 
 Andere Sunster-Modelle können abweichen. Das Testskript schreibt alle Rohdaten in `probe/logs/`, damit sie sich analysieren lassen.

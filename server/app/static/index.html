@@ -66,6 +66,8 @@
       <div class="metrics">
         <div><span class="m-label">Raum</span><span class="m-value h-room">–</span></div>
         <div><span class="m-label">Modus</span><span class="m-value h-mode">–</span></div>
+        <div><span class="m-label">Stufe</span><span class="m-value h-gear">–</span></div>
+        <div><span class="m-label">Gehäuse</span><span class="m-value h-case">–</span></div>
         <div><span class="m-label">Aus in</span><span class="m-value h-remaining">–</span></div>
         <div><span class="m-label">Spannung</span><span class="m-value h-voltage">–</span></div>
       </div>
@@ -85,6 +87,15 @@
           <input class="h-temp" type="number" min="8" max="36" value="20" inputmode="numeric" aria-label="Solltemperatur">
           <span>°C</span>
           <button class="btn h-tempstart">Temperatur</button>
+        </div>
+        <div class="fan-row" hidden>
+          <select class="h-fanlevel" aria-label="Lüfterstufe">
+            <option value="1">Stufe 1</option><option value="2">Stufe 2</option><option value="3">Stufe 3</option>
+            <option value="4">Stufe 4</option><option value="5" selected>Stufe 5</option><option value="6">Stufe 6</option>
+            <option value="7">Stufe 7</option><option value="8">Stufe 8</option><option value="9">Stufe 9</option>
+            <option value="10">Stufe 10</option>
+          </select>
+          <button class="btn h-fan">Lüften</button>
         </div>
         <div class="extend-row" hidden>
           <span class="muted">Verlängern</span>

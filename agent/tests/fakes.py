@@ -50,12 +50,16 @@ class SimHeater:
     def status_packet(self) -> bytes:
         p = ProtocolCBFF._build_feaa(0x80, 0x00, bytes(38))
         p[2] = 1
-        p[8] = 1
+        p[8] = 0 if self.run_state == 0 else 1      # 0 = Steuerung schläft
         p[10] = self.run_state
         p[11], p[12] = self.mode, self.value
-        p[13] = 10 if self.mode == 4 else 1
+        p[13] = 10 if self.mode == 4 else (self.value if self.mode == 3 else 1)
         p[14] = 3 if self.run_state == 2 else (4 if self.run_state == 3 else 0)
-        p[18] = self.room
+        if self.run_state != 0:                     # schlafend: alles 0 wie bei der echten Heizung
+            p[18] = self.room
+            p[23:25] = (128).to_bytes(2, "little")    # 12,8 V
+            case = 2330 if self.run_state == 2 else 600
+            p[25:27] = case.to_bytes(2, "little")
         p[-1] = sum(p[:-1]) & 0xFF
         return bytes(ProtocolCBFF._encrypt_cbff(p, SN))
 
@@ -99,7 +103,7 @@ class FakeClient:
             mode, value = pkt[8], pkt[9]
             if c2 == 1 and self.sim.run_state != 3:
                 self.sim.run_state = 2
-                if mode in (2, 4):  # Modus 1 übernimmt die echte Heizung nicht
+                if mode in (2, 3, 4):  # Modus 1 übernimmt die echte Heizung nicht
                     self.sim.mode, self.sim.value = mode, value
                 else:
                     self.sim.value = value

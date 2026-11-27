@@ -141,3 +141,15 @@ async def test_extend_when_off(setup):
     await worker.poll_once()
     await agent.handle_command("1", json.dumps({"action": "extend", "minutes": 60}))
     assert not acks(published)[-1]["ok"]
+
+
+async def test_ventilation_command(setup):
+    sim, clock, published, worker, agent = setup
+    await worker.poll_once()
+    await agent.handle_command("1", json.dumps({"action": "start", "mode": "lueften", "level": 4}))
+    assert "läuft" in acks(published)[-1]["message"]          # aus -> abgelehnt
+    await agent.handle_command("1", json.dumps({"action": "start", "mode": "vollgas"}))
+    await agent.handle_command("1", json.dumps({"action": "start", "mode": "lueften", "level": 4, "minutes": 30}))
+    ack = acks(published)[-1]
+    assert ack["ok"] and "Lüften Stufe 4" in ack["message"], ack
+    assert sim.mode == 3 and sim.value == 4

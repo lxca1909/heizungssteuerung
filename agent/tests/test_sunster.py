@@ -92,3 +92,33 @@ async def test_pin_not_sent_in_plaintext_after_handshake():
     # Nur der erste Ping ist Klartext; alles danach ist verschlüsselt (kein FEAA-Header im Klartext)
     assert sim.writes[0][:2] == b"\xaa\x55"
     assert all(w[:2] != b"\xfe\xaa" for w in sim.writes[1:])
+
+
+async def test_ventilation_only_when_running():
+    sim = SimHeater()
+    h = SunsterHeater(ADDRESS, 1234, client_factory(sim), timeout=1)
+    await h.connect()
+    with pytest.raises(HeaterError, match="läuft"):
+        await h.set_ventilation(5)
+    await h.start_vollgas()
+    st = await h.set_ventilation(3)
+    assert st.on and st.mode == "lueften" and st.fan_level == 3 and st.gear == 3
+    with pytest.raises(ValueError):
+        await h.set_ventilation(11)
+    st = await h.stop()
+    assert not st.on and sim.mode == 3   # Aus mit aktuellem Modus
+
+
+async def test_asleep_values_are_none():
+    sim = SimHeater()
+    sim.run_state = 0                     # "ganz aus": Steuerung schläft, Werte 0
+    h = SunsterHeater(ADDRESS, 1234, client_factory(sim), timeout=1)
+    await h.connect()
+    st = h.last_status
+    assert st.asleep and st.voltage is None and st.room_temp is None and st.case_temp is None and st.gear is None
+
+
+def test_real_packets_byte_mapping(cbff):
+    # echte Pakete: Spannung 12,8 V (Byte 23/24), Gehäuse über Byte 25/26
+    st = status_from_packet(cbff, bytes.fromhex(REAL_VOLLGAS))
+    assert st.voltage == 12.8 and st.case_temp > 200 and st.gear == 10 and st.co_ppm is None

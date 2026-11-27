@@ -142,6 +142,8 @@ function card(id) {
     if (!(temp >= 8 && temp <= 36)) return toast("Temperatur zwischen 8 und 36 °C", true);
     command(id, "start", { mode: "temperatur", temp, minutes: minutes() }, el);
   };
+  $(".h-fan", el).onclick = () =>
+    command(id, "start", { mode: "lueften", level: Number($(".h-fanlevel", el).value), minutes: minutes() }, el);
   el.querySelectorAll(".h-extend").forEach((b) => {
     b.onclick = () => command(id, "extend", { minutes: Number(b.dataset.min) }, el);
   });
@@ -167,7 +169,10 @@ function renderHeater(h) {
   let label = "Aus", cls = "pill";
   if (!h.connected || !s) { label = "Nicht verbunden"; cls = "pill bad"; }
   else if (s.error_code) { label = "Fehler " + s.error_code; cls = "pill bad"; }
-  else if (s.on) { label = s.phase === "zuendung" ? "Zündet" : "Heizt"; cls = "pill heat"; }
+  else if (s.on) {
+    label = s.mode === "lueften" ? "Lüftet" : s.phase === "zuendung" ? "Zündet" : s.phase === "selbsttest" ? "Startet" : "Heizt";
+    cls = "pill heat";
+  }
   else if (s.cooling_down) { label = "Kühlt ab"; cls = "pill warn"; }
   if (stale) { label += " (veraltet)"; }
   badge.textContent = label;
@@ -175,7 +180,12 @@ function renderHeater(h) {
 
   const fmt = (v, unit, digits = 0) => (v === null || v === undefined ? "–" : Number(v).toFixed(digits) + unit);
   $(".h-room", el).textContent = s ? fmt(s.room_temp, " °C") : "–";
-  $(".h-mode", el).textContent = !s ? "–" : s.mode === "vollgas" ? "Vollgas" : s.mode === "temperatur" ? `${s.set_temp} °C` : s.mode;
+  $(".h-mode", el).textContent = !s ? "–"
+    : s.mode === "vollgas" ? "Vollgas"
+    : s.mode === "temperatur" ? `${s.set_temp} °C`
+    : s.mode === "lueften" ? "Lüften" : s.mode;
+  $(".h-gear", el).textContent = s && s.on && s.gear != null ? `${s.gear} / 10` : "–";
+  $(".h-case", el).textContent = s ? fmt(s.case_temp, " °C") : "–";
   $(".h-voltage", el).textContent = s ? fmt(s.voltage, " V", 1) : "–";
   $(".h-remaining", el).textContent = s && s.on && h.remaining_min != null ? fmtMinutes(h.remaining_min) : "–";
 
@@ -191,6 +201,8 @@ function renderHeater(h) {
   const running = !!(h.connected && s && s.on);
   $(".h-stop", el).disabled = !running || el.dataset.busy === "1";
   $(".extend-row", el).hidden = !running;
+  $(".fan-row", el).hidden = !running;
+  $(".h-fan", el).disabled = el.dataset.busy === "1" || state.agentOnline === false;
   el.querySelectorAll(".h-extend").forEach((b) => (b.disabled = el.dataset.busy === "1" || state.agentOnline === false));
 }
 

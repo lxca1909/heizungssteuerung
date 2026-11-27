@@ -143,7 +143,8 @@ class HeaterWorker:
     # -------------------------------------------------------- Befehle
     async def handle(self, cmd: dict[str, Any]) -> tuple[bool, str]:
         """Befehle:
-        {"action": "start", "mode": "vollgas"|"temperatur", "temp": 22, "minutes": 120}
+        {"action": "start", "mode": "vollgas"|"temperatur"|"lueften", "temp": 22, "level": 5, "minutes": 120}
+            (lueften = nur Gebläse, Stufe 1–10, nur bei laufender Heizung)
         {"action": "extend", "minutes": 60}
         {"action": "stop"}
         {"action": "refresh"}
@@ -189,6 +190,10 @@ class HeaterWorker:
                 status = await self.heater.start_vollgas()
             elif mode == "temperatur":
                 status = await self.heater.start_temperature(int(cmd.get("temp", 20)))
+            elif mode == "lueften":
+                if not status.on:
+                    return False, "Lüften geht nur, wenn die Heizung läuft"
+                status = await self.heater.set_ventilation(int(cmd.get("level", 5)))
             else:
                 return False, f"Unbekannter Modus: {mode}"
             await self._apply_status(status)
@@ -196,7 +201,11 @@ class HeaterWorker:
             await self.publish_state()
             if not status.on:
                 return False, "Befehl gesendet, Heizung meldet aber noch AUS"
-            return True, f"Läuft ({status.mode}), automatisch aus in {minutes:.0f} min"
+            label = {"vollgas": "Vollgas", "temperatur": f"Temperatur {status.set_temp} °C",
+                     "lueften": f"Lüften Stufe {status.fan_level}"}.get(status.mode, status.mode)
+            if status.raw_mode != {"vollgas": 4, "temperatur": 2, "lueften": 3}[mode]:
+                return False, f"Heizung hat den Modus nicht übernommen (meldet {label})"
+            return True, f"Läuft ({label}), automatisch aus in {minutes:.0f} min"
 
         return False, f"Unbekannte Aktion: {action}"
 
